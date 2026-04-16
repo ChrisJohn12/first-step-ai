@@ -27,3 +27,26 @@ Save it with `Cmd+S`, then also create the folder it references:
 In your terminal run:
 ```
 mkdir -p src/data/patterns
+
+Create a new e-commerce automation pattern file in
+/src/data/patterns/ based on this input: $ARGUMENTS
+
+Use this structure and save with a descriptive filename:
+
+# Pattern Name
+## Trigger Conditions
+- [derived from input]
+
+## Recommendation
+[Specific tool and action]
+
+## Expected Time Savings
+[Estimated hours per week]
+
+## Setup Steps
+1.
+2.
+3.
+
+## Estimated Monthly Cost
+[Free or $ amount]

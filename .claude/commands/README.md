@@ -17,3 +17,4 @@ Usage: /build-intake-question [question description]
 ### /new-component
 Creates a new React component with Tailwind styling
 Usage: /new-component [ComponentName and description]
+

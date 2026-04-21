@@ -1,5 +1,5 @@
 const getRecommendation = async (sellerData, conversationHistory = []) => {
-  const response = await fetch("http://localhost:3001/api/recommend", {
+  const response = await fetch("/api/recommend", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",

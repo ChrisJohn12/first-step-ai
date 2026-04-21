@@ -1,4 +1,6 @@
 export default async function handler(req, res) {
+  console.log('API key present:', !!process.env.ANTHROPIC_API_KEY)
+
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' })
   }

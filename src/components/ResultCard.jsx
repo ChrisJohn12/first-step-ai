@@ -60,7 +60,7 @@ export default function ResultCard({ recommendation, onStartOver }) {
         borderRadius: '18px',
         marginBottom: '16px',
       }}>
-        <div style={{ backgroundColor: '#1A1D27', borderRadius: '16px', padding: '40px' }}>
+        <div style={{ backgroundColor: '#1A1D27', borderRadius: '16px', padding: '48px' }}>
 
           {/* Header */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '28px' }}>
@@ -219,7 +219,7 @@ export default function ResultCard({ recommendation, onStartOver }) {
         backgroundColor: '#1A1D27',
         border: '1px solid #2A2D3E',
         borderRadius: '14px',
-        padding: '24px',
+        padding: '32px',
         marginBottom: '12px',
       }}>
         {emailSubmitted ? (
@@ -253,7 +253,7 @@ export default function ResultCard({ recommendation, onStartOver }) {
                   backgroundColor: '#0F1117',
                   border: '1px solid #2A2D3E',
                   borderRadius: '8px',
-                  padding: '16px',
+                  padding: '20px',
                   color: '#F0F0F0',
                   fontSize: '14px',
                   outline: 'none',

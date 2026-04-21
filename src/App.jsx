@@ -151,7 +151,7 @@ export default function App() {
       </div>
 
       {/* Feature cards */}
-      <div style={{ padding: '0 24px 80px', maxWidth: '960px', margin: '0 auto' }}>
+      <div style={{ padding: '0 24px 80px', maxWidth: '1100px', margin: '0 auto' }}>
         <div style={{
           display: 'grid',
           gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
@@ -206,9 +206,9 @@ export default function App() {
       <div
         id="form-section"
         style={{
-          maxWidth: '800px',
+          maxWidth: '1000px',
           margin: '0 auto',
-          padding: '0 24px 100px',
+          padding: '0 32px 100px',
           display: showForm ? 'block' : 'none',
         }}
       >

@@ -206,7 +206,7 @@ export default function App() {
       <div
         id="form-section"
         style={{
-          maxWidth: '600px',
+          maxWidth: '800px',
           margin: '0 auto',
           padding: '0 24px 100px',
           display: showForm ? 'block' : 'none',

@@ -60,7 +60,7 @@ export default function ResultCard({ recommendation, onStartOver }) {
         borderRadius: '18px',
         marginBottom: '16px',
       }}>
-        <div style={{ backgroundColor: '#1A1D27', borderRadius: '16px', padding: '32px' }}>
+        <div style={{ backgroundColor: '#1A1D27', borderRadius: '16px', padding: '40px' }}>
 
           {/* Header */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '28px' }}>
@@ -152,7 +152,7 @@ export default function ResultCard({ recommendation, onStartOver }) {
             <div style={{ color: '#8B8FA8', fontSize: '11px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '12px' }}>
               What You Get
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '10px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '12px' }}>
               <div style={{
                 backgroundColor: '#0F1117',
                 border: '1px solid rgba(108,99,255,0.25)',
@@ -253,7 +253,7 @@ export default function ResultCard({ recommendation, onStartOver }) {
                   backgroundColor: '#0F1117',
                   border: '1px solid #2A2D3E',
                   borderRadius: '8px',
-                  padding: '10px 12px',
+                  padding: '16px',
                   color: '#F0F0F0',
                   fontSize: '14px',
                   outline: 'none',

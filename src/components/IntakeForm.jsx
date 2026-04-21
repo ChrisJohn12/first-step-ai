@@ -1,12 +1,8 @@
 import { useState } from 'react'
-import ReactMarkdown from 'react-markdown'
 import posthog from 'posthog-js'
 import getRecommendation from '../api/recommendation'
 
-console.log('VITE_POSTHOG_KEY:', import.meta.env.VITE_POSTHOG_KEY)
-
 function track(event, props) {
-  console.log('PostHog event fired:', event, props ?? '')
   posthog.capture(event, props)
 }
 
@@ -30,6 +26,40 @@ const TIME_DRAINS = [
   'Other',
 ]
 
+const QUESTIONS = [
+  {
+    key: 'platform',
+    question: 'What platform are you selling on?',
+    type: 'select',
+    options: PLATFORMS,
+    placeholder: 'Select your platform',
+    required: true,
+  },
+  {
+    key: 'monthlyOrders',
+    question: 'How many orders do you get per month?',
+    type: 'number',
+    placeholder: 'e.g. 150',
+    required: true,
+  },
+  {
+    key: 'timeDrain',
+    question: 'What takes up most of your time right now?',
+    type: 'select',
+    options: TIME_DRAINS,
+    placeholder: 'Select the biggest drain on your time',
+    required: true,
+  },
+  {
+    key: 'currentTools',
+    question: 'Any AI tools you\'re already using?',
+    type: 'text',
+    placeholder: 'e.g. ChatGPT, Klaviyo AI, or "none"',
+    required: false,
+    hint: 'Optional — skip if none',
+  },
+]
+
 const cardStyle = {
   backgroundColor: '#1A1D27',
   border: '1px solid #2A2D3E',
@@ -37,305 +67,263 @@ const cardStyle = {
   padding: '32px',
 }
 
-const labelStyle = {
-  color: '#8B8FA8',
-  fontSize: '13px',
-  fontWeight: '500',
-  marginBottom: '6px',
-  display: 'block',
-}
-
 const inputStyle = {
   width: '100%',
   backgroundColor: '#0F1117',
   border: '1px solid #2A2D3E',
   borderRadius: '8px',
-  padding: '10px 12px',
+  padding: '12px 14px',
   color: '#F0F0F0',
-  fontSize: '14px',
+  fontSize: '15px',
   outline: 'none',
   boxSizing: 'border-box',
 }
 
-export default function IntakeForm({ onSubmit }) {
-  const [formData, setFormData] = useState({
-    businessName: '',
-    email: '',
+function handleFocus(e) {
+  e.target.style.borderColor = '#6C63FF'
+  e.target.style.boxShadow = '0 0 0 2px rgba(108,99,255,0.2)'
+}
+
+function handleBlur(e) {
+  e.target.style.borderColor = '#2A2D3E'
+  e.target.style.boxShadow = 'none'
+}
+
+export default function IntakeForm({ onRecommendation }) {
+  const [currentQ, setCurrentQ] = useState(0)
+  const [answers, setAnswers] = useState({
     platform: '',
     monthlyOrders: '',
     timeDrain: '',
     currentTools: '',
   })
   const [loading, setLoading] = useState(false)
-  const [recommendation, setRecommendation] = useState(null)
   const [error, setError] = useState(null)
-  const [btnHover, setBtnHover] = useState(false)
-
+  const [visible, setVisible] = useState(true)
   const [formStarted, setFormStarted] = useState(false)
 
-  function handleChange(e) {
-    const { name, value } = e.target
+  const q = QUESTIONS[currentQ]
+  const isLast = currentQ === QUESTIONS.length - 1
+  const isFirst = currentQ === 0
+  const currentValue = answers[q.key]
+  const canAdvance = !q.required || currentValue?.toString().trim() !== ''
+
+  function handleAnswer(value) {
     if (!formStarted) {
       track('form_started')
       setFormStarted(true)
     }
-    setFormData((prev) => ({ ...prev, [name]: value }))
+    setAnswers((prev) => ({ ...prev, [q.key]: value }))
   }
 
-  function handleFocus(e) {
-    e.target.style.borderColor = '#6C63FF'
-    e.target.style.boxShadow = '0 0 0 2px rgba(108,99,255,0.2)'
+  function goTo(newQ) {
+    setVisible(false)
+    setTimeout(() => {
+      setCurrentQ(newQ)
+      setVisible(true)
+    }, 160)
   }
 
-  function handleBlur(e) {
-    e.target.style.borderColor = '#2A2D3E'
-    e.target.style.boxShadow = 'none'
+  function goNext() {
+    if (!canAdvance) return
+    goTo(currentQ + 1)
   }
 
-  async function handleSubmit(e) {
-    e.preventDefault()
+  function goBack() {
+    goTo(currentQ - 1)
+  }
+
+  function handleKeyDown(e) {
+    if (e.key === 'Enter' && !isLast && canAdvance) {
+      e.preventDefault()
+      goNext()
+    }
+  }
+
+  async function handleSubmit() {
     setLoading(true)
     setError(null)
-    track('form_completed', { platform: formData.platform, timeDrain: formData.timeDrain })
+    track('form_completed', { platform: answers.platform, timeDrain: answers.timeDrain })
     try {
-      const result = await getRecommendation(formData)
-      setRecommendation(result)
-      track('recommendation_generated', { platform: formData.platform, timeDrain: formData.timeDrain })
-      onSubmit?.(formData)
+      const result = await getRecommendation(answers)
+      track('recommendation_generated', { platform: answers.platform, timeDrain: answers.timeDrain })
+      onRecommendation?.(result, answers)
     } catch (err) {
       console.error('getRecommendation failed:', err)
       setError(err.message || 'Something went wrong. Please try again.')
-    } finally {
       setLoading(false)
     }
   }
 
-  if (recommendation) {
-    return (
-      <div style={cardStyle}>
-        <div className="mb-5 flex items-center gap-3">
-          <div
-            className="flex h-9 w-9 items-center justify-center rounded-full text-lg"
-            style={{ backgroundColor: 'rgba(0,212,100,0.15)', color: '#00D464' }}
-          >
-            ✓
-          </div>
-          <h2 className="text-xl font-bold" style={{ color: '#F0F0F0' }}>
-            Your top automation opportunity
-          </h2>
-        </div>
-
-        <div
-          className="prose prose-sm max-w-none"
-          style={{ color: '#F0F0F0' }}
-        >
-          <ReactMarkdown
-            components={{
-              h1: ({ children }) => (
-                <h1 style={{ color: '#F0F0F0', fontSize: '20px', fontWeight: '700', marginBottom: '12px' }}>{children}</h1>
-              ),
-              h2: ({ children }) => (
-                <h2 style={{ color: '#F0F0F0', fontSize: '17px', fontWeight: '600', marginTop: '20px', marginBottom: '8px' }}>{children}</h2>
-              ),
-              h3: ({ children }) => (
-                <h3 style={{ color: '#F0F0F0', fontSize: '15px', fontWeight: '600', marginTop: '16px', marginBottom: '6px' }}>{children}</h3>
-              ),
-              p: ({ children }) => (
-                <p style={{ color: '#C8CAD8', fontSize: '14px', lineHeight: '1.7', marginBottom: '12px' }}>{children}</p>
-              ),
-              ol: ({ children }) => (
-                <ol style={{ paddingLeft: '0', listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '16px' }}>{children}</ol>
-              ),
-              li: ({ children }) => {
-                return (
-                  <li
-                    style={{
-                      display: 'flex',
-                      alignItems: 'flex-start',
-                      gap: '12px',
-                      backgroundColor: '#0F1117',
-                      border: '1px solid #2A2D3E',
-                      borderRadius: '8px',
-                      padding: '12px 14px',
-                      color: '#C8CAD8',
-                      fontSize: '14px',
-                      lineHeight: '1.6',
-                    }}
-                  >
-                    {children}
-                  </li>
-                )
-              },
-              ul: ({ children }) => (
-                <ul style={{ paddingLeft: '0', listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '16px' }}>{children}</ul>
-              ),
-              strong: ({ children }) => (
-                <strong style={{ color: '#F0F0F0', fontWeight: '600' }}>{children}</strong>
-              ),
-              code: ({ children }) => (
-                <code style={{ backgroundColor: '#0F1117', color: '#00D4FF', padding: '2px 6px', borderRadius: '4px', fontSize: '13px' }}>{children}</code>
-              ),
-            }}
-          >
-            {recommendation}
-          </ReactMarkdown>
-        </div>
-
-        <button
-          onClick={() => {
-            track('start_over_clicked')
-            setRecommendation(null)
-            setFormStarted(false)
-            setFormData({ businessName: '', email: '', platform: '', monthlyOrders: '', timeDrain: '', currentTools: '' })
-          }}
-          className="mt-6 rounded-lg px-4 py-2 text-sm transition"
-          style={{ border: '1px solid #2A2D3E', color: '#8B8FA8', backgroundColor: 'transparent', cursor: 'pointer' }}
-          onMouseEnter={(e) => { e.target.style.borderColor = '#6C63FF'; e.target.style.color = '#F0F0F0' }}
-          onMouseLeave={(e) => { e.target.style.borderColor = '#2A2D3E'; e.target.style.color = '#8B8FA8' }}
-        >
-          Start over
-        </button>
-      </div>
-    )
-  }
-
   return (
-    <form onSubmit={handleSubmit} style={cardStyle}>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+    <div style={cardStyle}>
 
-        <div>
-          <label htmlFor="businessName" style={labelStyle}>Business name</label>
-          <input
-            id="businessName"
-            name="businessName"
-            type="text"
-            required
-            placeholder="Acme Store"
-            value={formData.businessName}
-            onChange={handleChange}
-            onFocus={handleFocus}
-            onBlur={handleBlur}
-            style={inputStyle}
-          />
+      {/* Progress bar */}
+      <div style={{ marginBottom: '28px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+          <span style={{ color: '#6C63FF', fontSize: '12px', fontWeight: '600', letterSpacing: '0.04em' }}>
+            Step {currentQ + 1} of 4
+          </span>
+          <span style={{ color: '#5A5D72', fontSize: '12px' }}>
+            {currentQ === 3 ? 'Last step' : `${3 - currentQ} step${3 - currentQ !== 1 ? 's' : ''} left`}
+          </span>
         </div>
-
-        <div>
-          <label htmlFor="email" style={labelStyle}>Email address</label>
-          <input
-            id="email"
-            name="email"
-            type="email"
-            required
-            placeholder="you@example.com"
-            value={formData.email}
-            onChange={handleChange}
-            onFocus={handleFocus}
-            onBlur={handleBlur}
-            style={inputStyle}
-          />
+        <div style={{ display: 'flex', gap: '4px' }}>
+          {[0, 1, 2, 3].map((i) => (
+            <div
+              key={i}
+              style={{
+                flex: 1,
+                height: '3px',
+                borderRadius: '2px',
+                backgroundColor: i <= currentQ ? '#6C63FF' : '#2A2D3E',
+                transition: 'background-color 0.3s ease',
+              }}
+            />
+          ))}
         </div>
+      </div>
 
-        <div>
-          <label htmlFor="platform" style={labelStyle}>E-commerce platform</label>
-          <select
-            id="platform"
-            name="platform"
-            required
-            value={formData.platform}
-            onChange={handleChange}
-            onFocus={handleFocus}
-            onBlur={handleBlur}
-            style={{ ...inputStyle, cursor: 'pointer' }}
-          >
-            <option value="" disabled>Select your platform</option>
-            {PLATFORMS.map((p) => (
-              <option key={p} value={p}>{p}</option>
-            ))}
-          </select>
-        </div>
+      {/* Question */}
+      <div style={{
+        opacity: visible ? 1 : 0,
+        transition: 'opacity 0.16s ease',
+      }}>
+        <h3 style={{
+          color: '#F0F0F0',
+          fontSize: '20px',
+          fontWeight: '700',
+          lineHeight: '1.35',
+          marginBottom: q.hint ? '6px' : '20px',
+        }}>
+          {q.question}
+        </h3>
 
-        <div>
-          <label htmlFor="monthlyOrders" style={labelStyle}>Monthly orders</label>
-          <input
-            id="monthlyOrders"
-            name="monthlyOrders"
-            type="number"
-            required
-            min="0"
-            placeholder="e.g. 150"
-            value={formData.monthlyOrders}
-            onChange={handleChange}
-            onFocus={handleFocus}
-            onBlur={handleBlur}
-            style={inputStyle}
-          />
-        </div>
-
-        <div>
-          <label htmlFor="timeDrain" style={labelStyle}>Biggest time drain</label>
-          <select
-            id="timeDrain"
-            name="timeDrain"
-            required
-            value={formData.timeDrain}
-            onChange={handleChange}
-            onFocus={handleFocus}
-            onBlur={handleBlur}
-            style={{ ...inputStyle, cursor: 'pointer' }}
-          >
-            <option value="" disabled>Select the biggest drain on your time</option>
-            {TIME_DRAINS.map((t) => (
-              <option key={t} value={t}>{t}</option>
-            ))}
-          </select>
-        </div>
-
-        <div>
-          <label htmlFor="currentTools" style={labelStyle}>
-            Current AI tools{' '}
-            <span style={{ fontWeight: '400', color: '#5A5D72' }}>(optional)</span>
-          </label>
-          <input
-            id="currentTools"
-            name="currentTools"
-            type="text"
-            placeholder="e.g. ChatGPT, Klaviyo AI, none"
-            value={formData.currentTools}
-            onChange={handleChange}
-            onFocus={handleFocus}
-            onBlur={handleBlur}
-            style={inputStyle}
-          />
-        </div>
-
-        {error && (
-          <p style={{ color: '#FF6B6B', fontSize: '13px' }}>{error}</p>
+        {q.hint && (
+          <p style={{ color: '#5A5D72', fontSize: '13px', marginBottom: '20px', marginTop: 0 }}>
+            {q.hint}
+          </p>
         )}
 
-        <button
-          type="submit"
-          disabled={loading}
-          onMouseEnter={() => setBtnHover(true)}
-          onMouseLeave={() => setBtnHover(false)}
-          style={{
-            marginTop: '4px',
-            padding: '14px',
-            borderRadius: '10px',
-            border: 'none',
-            background: 'linear-gradient(90deg, #6C63FF, #00D4FF)',
-            color: '#fff',
-            fontWeight: '700',
-            fontSize: '15px',
-            cursor: loading ? 'not-allowed' : 'pointer',
-            opacity: loading ? 0.7 : 1,
-            boxShadow: btnHover && !loading ? '0 0 20px rgba(108,99,255,0.5)' : 'none',
-            transition: 'box-shadow 0.2s ease, opacity 0.2s ease',
-          }}
-        >
-          {loading ? 'Analyzing your store…' : 'Get my free recommendation'}
-        </button>
+        {q.type === 'select' && (
+          <select
+            value={currentValue}
+            onChange={(e) => handleAnswer(e.target.value)}
+            onFocus={handleFocus}
+            onBlur={handleBlur}
+            style={{ ...inputStyle, cursor: 'pointer' }}
+          >
+            <option value="" disabled>{q.placeholder}</option>
+            {q.options.map((o) => (
+              <option key={o} value={o}>{o}</option>
+            ))}
+          </select>
+        )}
 
+        {q.type === 'number' && (
+          <input
+            type="number"
+            min="0"
+            value={currentValue}
+            placeholder={q.placeholder}
+            onChange={(e) => handleAnswer(e.target.value)}
+            onFocus={handleFocus}
+            onBlur={handleBlur}
+            onKeyDown={handleKeyDown}
+            style={inputStyle}
+          />
+        )}
+
+        {q.type === 'text' && (
+          <input
+            type="text"
+            value={currentValue}
+            placeholder={q.placeholder}
+            onChange={(e) => handleAnswer(e.target.value)}
+            onFocus={handleFocus}
+            onBlur={handleBlur}
+            onKeyDown={handleKeyDown}
+            style={inputStyle}
+          />
+        )}
       </div>
-    </form>
+
+      {error && (
+        <p style={{ color: '#FF6B6B', fontSize: '13px', marginTop: '12px' }}>{error}</p>
+      )}
+
+      {/* Navigation */}
+      <div style={{ display: 'flex', gap: '10px', marginTop: '24px' }}>
+        {!isFirst && (
+          <button
+            type="button"
+            onClick={goBack}
+            style={{
+              padding: '13px 20px',
+              borderRadius: '10px',
+              border: '1px solid #2A2D3E',
+              color: '#8B8FA8',
+              backgroundColor: 'transparent',
+              cursor: 'pointer',
+              fontSize: '14px',
+              fontWeight: '500',
+              flexShrink: 0,
+              transition: 'border-color 0.2s ease, color 0.2s ease',
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#6C63FF'; e.currentTarget.style.color = '#F0F0F0' }}
+            onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#2A2D3E'; e.currentTarget.style.color = '#8B8FA8' }}
+          >
+            ← Back
+          </button>
+        )}
+
+        {!isLast ? (
+          <button
+            type="button"
+            onClick={goNext}
+            disabled={!canAdvance}
+            style={{
+              flex: 1,
+              padding: '13px',
+              borderRadius: '10px',
+              border: 'none',
+              background: canAdvance
+                ? 'linear-gradient(90deg, #6C63FF, #00D4FF)'
+                : '#2A2D3E',
+              color: canAdvance ? '#fff' : '#5A5D72',
+              fontWeight: '700',
+              fontSize: '15px',
+              cursor: canAdvance ? 'pointer' : 'not-allowed',
+              transition: 'background 0.2s ease, color 0.2s ease',
+            }}
+          >
+            Next →
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={handleSubmit}
+            disabled={loading}
+            style={{
+              flex: 1,
+              padding: '13px',
+              borderRadius: '10px',
+              border: 'none',
+              background: 'linear-gradient(90deg, #6C63FF, #00D4FF)',
+              color: '#fff',
+              fontWeight: '700',
+              fontSize: '15px',
+              cursor: loading ? 'not-allowed' : 'pointer',
+              opacity: loading ? 0.7 : 1,
+              boxShadow: loading ? 'none' : '0 0 20px rgba(108,99,255,0.4)',
+              transition: 'opacity 0.2s ease',
+            }}
+          >
+            {loading ? 'Analyzing your store…' : 'Get my recommendation'}
+          </button>
+        )}
+      </div>
+
+    </div>
   )
 }

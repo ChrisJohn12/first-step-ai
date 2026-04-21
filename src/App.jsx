@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import IntakeForm from './components/IntakeForm'
+import ResultCard from './components/ResultCard'
 
 const COLORS = {
   bg: '#0F1117',
@@ -27,13 +28,24 @@ const features = [
   {
     icon: '◎',
     title: 'Actionable Results',
-    desc: 'Receive specific, implementable steps you can take today — for free.',
+    desc: 'Receive specific, implementable steps you can take today.',
     accent: '#FF6B9D',
   },
 ]
 
 export default function App() {
   const [showForm, setShowForm] = useState(false)
+  const [recommendation, setRecommendation] = useState(null)
+  const [formKey, setFormKey] = useState(0)
+
+  function handleRecommendation(result) {
+    setRecommendation(result)
+  }
+
+  function handleStartOver() {
+    setRecommendation(null)
+    setFormKey((k) => k + 1)
+  }
 
   return (
     <div style={{ backgroundColor: COLORS.bg, minHeight: '100vh', fontFamily: 'inherit' }}>
@@ -81,7 +93,7 @@ export default function App() {
             letterSpacing: '0.05em',
             textTransform: 'uppercase',
           }}>
-            ✦ Your E-Commerce Success Guide
+            ✦ AI AUDIT FOR ONLINE SELLERS
           </span>
         </div>
 
@@ -101,8 +113,8 @@ export default function App() {
         </h1>
 
         <p style={{ color: COLORS.muted, fontSize: '17px', lineHeight: '1.7', marginBottom: '36px', maxWidth: '520px', margin: '0 auto 36px' }}>
-          Answer four questions and get a specific, actionable recommendation
-          to save you the most time this week. Free.
+          Answer 4 questions and get a specific, actionable recommendation
+          to save you the most time this week.
         </p>
 
         <button
@@ -190,7 +202,7 @@ export default function App() {
         </div>
       </div>
 
-      {/* Form section */}
+      {/* Form / Result section */}
       <div
         id="form-section"
         style={{
@@ -200,54 +212,26 @@ export default function App() {
           display: showForm ? 'block' : 'none',
         }}
       >
-        <div style={{ textAlign: 'center', marginBottom: '32px' }}>
-          <h2 style={{ color: COLORS.text, fontSize: '26px', fontWeight: '700', marginBottom: '8px' }}>
-            Tell us about your store
-          </h2>
-          <p style={{ color: COLORS.muted, fontSize: '14px' }}>
-            We'll find your single highest-ROI automation opportunity.
-          </p>
-        </div>
-        <IntakeForm />
+        {recommendation ? (
+          <ResultCard
+            recommendation={recommendation}
+            onStartOver={handleStartOver}
+          />
+        ) : (
+          <>
+            <div style={{ textAlign: 'center', marginBottom: '32px' }}>
+              <h2 style={{ color: COLORS.text, fontSize: '26px', fontWeight: '700', marginBottom: '8px' }}>
+                What's your biggest time drain?
+              </h2>
+              <p style={{ color: COLORS.muted, fontSize: '14px' }}>
+                Answer 4 quick questions and get a specific action plan built for your store.
+              </p>
+            </div>
+            <IntakeForm key={formKey} onRecommendation={handleRecommendation} />
+          </>
+        )}
       </div>
 
-      {/* CTA banner (shown when form is hidden) */}
-      {!showForm && (
-        <div style={{ padding: '0 24px 100px', textAlign: 'center' }}>
-          <div style={{
-            maxWidth: '600px',
-            margin: '0 auto',
-            backgroundColor: COLORS.card,
-            border: `1px solid ${COLORS.border}`,
-            borderRadius: '20px',
-            padding: '48px 32px',
-            background: `linear-gradient(135deg, ${COLORS.card} 0%, rgba(108,99,255,0.08) 100%)`,
-          }}>
-            <p style={{ color: COLORS.muted, fontSize: '12px', fontWeight: '600', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '12px' }}>
-              Ready to save hours every week?
-            </p>
-            <h2 style={{ color: COLORS.text, fontSize: '24px', fontWeight: '700', marginBottom: '24px', lineHeight: '1.3' }}>
-              Get your free AI action plan now
-            </h2>
-            <button
-              onClick={() => setShowForm(true)}
-              style={{
-                background: 'linear-gradient(90deg, #6C63FF, #00D4FF)',
-                border: 'none',
-                borderRadius: '10px',
-                padding: '14px 32px',
-                color: '#fff',
-                fontWeight: '700',
-                fontSize: '15px',
-                cursor: 'pointer',
-                boxShadow: '0 0 24px rgba(108,99,255,0.3)',
-              }}
-            >
-              Answer 4 questions →
-            </button>
-          </div>
-        </div>
-      )}
 
     </div>
   )

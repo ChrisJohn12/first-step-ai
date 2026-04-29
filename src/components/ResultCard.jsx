@@ -34,6 +34,7 @@ export default function ResultCard({ recommendation, onStartOver }) {
   const [email, setEmail] = useState('')
   const [emailSubmitted, setEmailSubmitted] = useState(false)
   const [emailLoading, setEmailLoading] = useState(false)
+  const [emailError, setEmailError] = useState('')
 
   function handleStartOver() {
     posthog.capture('start_over_clicked')
@@ -44,11 +45,22 @@ export default function ResultCard({ recommendation, onStartOver }) {
     e.preventDefault()
     if (!email.trim()) return
     setEmailLoading(true)
+    setEmailError('')
     posthog.capture('email_captured', { email })
-    // TODO: wire up to Supabase or email provider
-    await new Promise((r) => setTimeout(r, 600))
-    setEmailSubmitted(true)
-    setEmailLoading(false)
+    try {
+      const res = await fetch('/api/send-plan', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, recommendation }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Failed to send email')
+      setEmailSubmitted(true)
+    } catch (err) {
+      setEmailError(err.message || 'Something went wrong. Please try again.')
+    } finally {
+      setEmailLoading(false)
+    }
   }
 
   return (
@@ -279,6 +291,11 @@ export default function ResultCard({ recommendation, onStartOver }) {
                 {emailLoading ? '…' : 'Send my plan'}
               </button>
             </form>
+            {emailError && (
+              <p style={{ color: '#FF6B6B', fontSize: '13px', margin: '10px 0 0' }}>
+                {emailError}
+              </p>
+            )}
           </>
         )}
       </div>
